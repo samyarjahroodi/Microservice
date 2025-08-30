@@ -1,7 +1,10 @@
 package com.example.micriservice;
 
 import com.example.micriservice.dto.ProductRequest;
+import com.example.micriservice.repository.ProductRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,19 +34,25 @@ class MicroserviceApplicationTests {
     @Autowired
     private ObjectMapper objectMapper;//used to map java Object into Json
 
-    @DynamicPropertySource //Spring Boot normally reads from application.properties but after adding this annotation overrides
+    @Autowired
+    private ProductRepository productRepository;
+
+    @DynamicPropertySource
+    //Spring Boot normally reads from application.properties but after adding this annotation overrides
     static void setProperties(DynamicPropertyRegistry dynamicPropertyRegistry) {
         dynamicPropertyRegistry.add("spring.data.mongodb.host", mongoDBContainer::getReplicaSetUrl);
     }
 
     @Test
     void shouldCreateProduct() throws Exception {
+        productRepository.deleteAll();
         ProductRequest productRequest = getProductRequest();
         String productRequestString = objectMapper.writeValueAsString(productRequest);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/product/createProduct")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(productRequestString))
                 .andExpect(status().isCreated());
+        Assertions.assertEquals(1, productRepository.findAll().size());
 
     }
 
